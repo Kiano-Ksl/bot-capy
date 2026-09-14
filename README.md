@@ -47,6 +47,7 @@ npm install
 ```
 
 **3. Jalankan Bot:**
+Jalankan perintah ini di terminal, lalu segera buka WhatsApp di HP Anda (Tautkan Perangkat) untuk memindai *QR Code* yang muncul:
 ```bash
 node index.js
 ```
