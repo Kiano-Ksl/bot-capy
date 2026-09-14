@@ -8,7 +8,7 @@
 
 ---
 
-## 🗂️ Daftar Fitur
+##  Daftar Fitur
 
 | Kategori | Perintah / Command | Status | Deskripsi |
 | :--- | :--- | :---: | :--- |
@@ -22,7 +22,7 @@
 
 ---
 
-## ⚙️ Persyaratan Sistem
+## # Persyaratan Sistem
 
 * **OS:** Linux (Ubuntu/Debian) atau Windows
 * **Engine:** Node.js (Versi 18.x ke atas)
@@ -31,13 +31,13 @@
 
 ---
 
-## 🚀 Panduan Penggunaan
+##  Panduan Penggunaan
 
 Panduan ini ditujukan saat bot akan di-deploy ke VPS atau mesin baru:
 
 **1. Clone Repositori:**
 ```bash
-git clone [https://github.com/Kiano-Ksl/bot-capy.git](https://github.com/Kiano-Ksl/bot-capy.git)
+git clone https://github.com/Kiano-Ksl/bot-capy.git
 cd bot-capy
 ```
 
