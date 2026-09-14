@@ -1,7 +1,7 @@
 # Folder dependencies
 node_modules/
 
-# SANGAT FATAL: Folder sesi WhatsApp (Wajib diblokir)
+# Folder sesi WhatsApp
 auth_session/
 
 # File temporary
