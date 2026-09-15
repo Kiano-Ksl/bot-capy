@@ -1,11 +1,11 @@
 // File: features/sticker.js
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+// const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+// ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 async function handleSticker(sock, msg, from) {
     const isImage = msg.message.imageMessage || msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
