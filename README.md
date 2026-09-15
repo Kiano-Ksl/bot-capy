@@ -54,4 +54,4 @@ node index.js
 ---
 
 ## 📝 Kredit & Lisensi
-Struktur dasar bot ini diadaptasi dari **Ourin**, kemudian dimodifikasi dan dioptimasi secara mandiri untuk efisiensi RAM serta pembaruan fitur AI. Engine WhatsApp Web API didukung oleh [Baileys](https://github.com/WhiskeySockets/Baileys).
+Struktur dasar bot ini diadaptasi dari **Ourin**, kemudian dimodifikasi dan dioptimasi secara mandiri. Engine WhatsApp Web API didukung oleh [Baileys](https://github.com/WhiskeySockets/Baileys).
