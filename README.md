@@ -66,7 +66,7 @@ pkg install git nodejs ffmpeg imagemagick -y
 
 **2. Clone Repositori:**
 ```bash
-git clone [https://github.com/Kiano-Ksl/bot-capy.git](https://github.com/Kiano-Ksl/bot-capy.git)
+git clone https://github.com/Kiano-Ksl/bot-capy.git
 cd bot-capy
 ```
 
