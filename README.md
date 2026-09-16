@@ -8,7 +8,7 @@
 
 ---
 
-##  Daftar Fitur
+## Daftar Fitur
 
 | Kategori | Perintah / Command | Status | Deskripsi |
 | :--- | :--- | :---: | :--- |
@@ -22,22 +22,22 @@
 
 ---
 
-## # Persyaratan Sistem
+## 💻 Persyaratan Sistem
 
-* **OS:** Linux (Ubuntu/Debian) atau Windows
+* **OS:** Linux (Ubuntu/Debian), Windows, atau Android (via Termux)
 * **Engine:** Node.js (Versi 18.x ke atas)
 * **Dependensi:** FFmpeg (Wajib untuk fitur pembuatan stiker)
 * **RAM:** Minimal 1 GB
 
 ---
 
-##  Panduan Penggunaan
+## Panduan Penggunaan (PC / VPS / Windows)
 
-Panduan ini ditujukan saat bot akan di-deploy ke VPS atau mesin baru:
+Panduan ini ditujukan saat bot akan di-deploy ke PC, Windows, atau VPS. *(Catatan untuk Windows: Pastikan Anda sudah menginstal Git dan Node.js dari situs resminya).*
 
 **1. Clone Repositori:**
 ```bash
-git clone https://github.com/Kiano-Ksl/bot-capy.git
+git clone [https://github.com/Kiano-Ksl/bot-capy.git](https://github.com/Kiano-Ksl/bot-capy.git)
 cd bot-capy
 ```
 
@@ -51,7 +51,40 @@ Jalankan perintah ini di terminal, lalu segera buka WhatsApp di HP Anda (Tautkan
 ```bash
 node index.js
 ```
+
 ---
 
-## 📝 Kredit & Lisensi
+## # Panduan Instalasi (HP Android / Termux)
+
+Bagi pengguna Android yang ingin menjalankan bot ini melalui aplikasi Termux, ikuti langkah-langkah berikut secara berurutan:
+
+**1. Update & Install Bahan Dasar:**
+```bash
+pkg update && pkg upgrade -y
+pkg install git nodejs ffmpeg imagemagick -y
+```
+
+**2. Clone Repositori:**
+```bash
+git clone [https://github.com/Kiano-Ksl/bot-capy.git](https://github.com/Kiano-Ksl/bot-capy.git)
+cd bot-capy
+```
+
+**3. Instalasi Modul Utama:**
+```bash
+npm install
+```
+
+**4. Fix Error Sharp (Wajib untuk pengguna Termux):**
+Agar bot bisa merender gambar (thumbnail) tanpa error di sistem operasi HP, jalankan perintah ini:
+```bash
+npm install sharp @img/sharp-wasm32
+```
+
+**5. Jalankan Bot & Scan QR:**
+```bash
+node index.js
+
+```
+## # Kredit & Lisensi
 Struktur dasar bot ini diadaptasi dari **Ourin & Rimuru**, kemudian dimodifikasi dan dioptimasi secara mandiri. Engine WhatsApp Web API didukung oleh [Baileys](https://github.com/WhiskeySockets/Baileys).
