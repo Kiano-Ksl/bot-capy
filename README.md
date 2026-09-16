@@ -1,8 +1,12 @@
 # 🤖 Bot Capy
 
+# 🤖 Bot Capy
+
 ![NodeJS](https://img.shields.io/badge/Node.js-18.x-green?style=flat-square&logo=nodedotjs)
 ![Baileys](https://img.shields.io/badge/Engine-Baileys-blue?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
+![Windows](https://img.shields.io/badge/Platform-Windows-blue?style=flat-square&logo=windows)
+![Android](https://img.shields.io/badge/Platform-Android%20(Termux)-green?style=flat-square&logo=android)
 
 > **Bot Capy** WhatsApp Bot ringan.
 
