@@ -81,10 +81,16 @@ Agar bot bisa merender gambar (thumbnail) tanpa error di sistem operasi HP, jala
 npm install sharp @img/sharp-wasm32
 ```
 
-**5. Jalankan Bot & Scan QR:**
+**5. Jalankan Bot:**
 ```bash
 node index.js
-
 ```
+
+**6. Scan QR:**
+```bash
+Kirim Qr ke device lain, lalu scan Qr di Aplikasi Whatsaap
+```
+
+
 ## # Kredit & Lisensi
 Struktur dasar bot ini diadaptasi dari **Ourin & Rimuru**, kemudian dimodifikasi dan dioptimasi secara mandiri. Engine WhatsApp Web API didukung oleh [Baileys](https://github.com/WhiskeySockets/Baileys).
