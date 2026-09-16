@@ -87,9 +87,7 @@ node index.js
 ```
 
 **6. Scan QR:**
-```bash
 Kirim Qr ke device lain, lalu scan Qr di Aplikasi Whatsaap
-```
 
 
 ## # Kredit & Lisensi
