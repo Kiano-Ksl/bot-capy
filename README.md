@@ -6,7 +6,7 @@
 ![Windows](https://img.shields.io/badge/Platform-Windows-blue?style=flat-square&logo=windows)
 ![Android](https://img.shields.io/badge/Platform-Android%20(Termux)-green?style=flat-square&logo=android)
 
-> **Bot Capy** WhatsApp Bot ringan.
+> **Bot Capy** WhatsApp Bot
 
 ---
 
