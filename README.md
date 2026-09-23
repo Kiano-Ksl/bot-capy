@@ -9,7 +9,7 @@
 
 ---
 
-## 🚀 Daftar Fitur
+## = Daftar Fitur
 
 | Kategori | Perintah / Command | Status | Deskripsi |
 | :--- | :--- | :---: | :--- |
@@ -23,7 +23,7 @@
 
 ---
 
-## 💻 Persyaratan Sistem
+## Persyaratan Sistem
 
 * **OS:** Linux (Ubuntu/Debian direkomendasikan), Windows, atau Android (via Termux)
 * **Engine:** Node.js (Versi 18.x atau 20.x)
@@ -50,7 +50,7 @@ sudo npm install -g pm2
 
 **3. Clone Repositori:**
 ```bash
-git clone [https://github.com/Kiano-Ksl/bot-capy.git](https://github.com/Kiano-Ksl/bot-capy.git)
+git clone https://github.com/Kiano-Ksl/bot-capy.git
 cd bot-capy
 ```
 
@@ -81,7 +81,7 @@ pm2 startup
 
 **1. Clone Repositori:**
 ```bash
-git clone [https://github.com/Kiano-Ksl/bot-capy.git](https://github.com/Kiano-Ksl/bot-capy.git)
+git clone https://github.com/Kiano-Ksl/bot-capy.git
 cd bot-capy
 ```
 
@@ -110,7 +110,7 @@ pkg install git nodejs ffmpeg imagemagick -y
 
 **2. Clone Repositori:**
 ```bash
-git clone [https://github.com/Kiano-Ksl/bot-capy.git](https://github.com/Kiano-Ksl/bot-capy.git)
+git clone https://github.com/Kiano-Ksl/bot-capy.git
 cd bot-capy
 ```
 
