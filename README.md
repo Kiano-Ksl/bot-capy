@@ -5,7 +5,7 @@
 ![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
 ![Server](https://img.shields.io/badge/Deployed_on-Azure_Cloud-0089D6?style=flat-square&logo=microsoft-azure&logoColor=white)
 
-> **Bot Capy** WhatsApp Bot ringan, cepat, dan siap tempur 24/7.
+> **Bot Capy** WhatsApp Bot ringan
 
 ---
 
