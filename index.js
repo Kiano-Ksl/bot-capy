@@ -3,6 +3,16 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 
+const handleBalap = require('./features/balap.js');
+const handleKage = require('./features/kage')
+const handleFlappy = require('./features/flappy');
+const handleHillClimb = require('./features/hillclimb');
+const handleMario = require('./features/mario');
+const handleDino = require('./features/dino');
+const handlePlayOnline = require('./features/play');
+const handleSlot = require('./features/slot');
+const handleSonic = require('./features/sonic');
+const handleCatur = require('./features/catur');
 const handleInstagram = require('./features/instagram');
 const handleTiktok = require('./features/tiktok');
 const handleSticker = require('./features/sticker');
@@ -116,12 +126,25 @@ Halo! Ada yang bisa Capy bantu?
  ◦ *.fb* <link> (Facebook)
  ◦ *.spotify* <judul/link>
 
+🎵 *Music*
+ ◦ *.play* <judul>
+
 🤖 *AI & GENERATOR*
  ◦ *.ai* <tanya> (Chat Cerdas)
  ◦ *.flux* <prompt> (Bikin Gambar)
 
 🎮 *GAMES*
  ◦ *.ttt* (Main Tic-Tac-Toe)
+ ◦ *.catur* (Main Catur)
+ ◦ *.sonik* (Main Sonic)
+ ◦ *.slot* (Main Slot)
+ ◦ *.dino* (Main Dino)
+ ◦ *.mario* (Main super mario)
+ ◦ *.hillclimb* (Main hillclimb)
+ ◦ *.kage* (Main kage)
+ ◦ *.flappy* (Main Flappy Bird)
+ ◦ *.balap* (Main Balapan)
+
 
 🛠️ *TOOLS*
  ◦ *.s* (Ubah Foto/Video jadi Stiker)
@@ -160,9 +183,59 @@ Halo! Ada yang bisa Capy bantu?
             await handleTictactoeCommand(sock, msg, from, sender);
         }
 
+        // CATUR HTML
+        if (command === '.catur' || command === '!catur' || command === '.chess') {
+            await handleCatur(sock, msg, from);
+        }
+
+        // SONIC DASH HTML
+        if (command === '.sonik' || command === '.dash' || command === '.speedy') {
+            await handleSonic(sock, msg, from);
+        }
+
+        // SLOT MACHINE HTML
+        if (command === '.slot' || command === '.slots' || command === '.mesin') {
+            await handleSlot(sock, msg, from);
+        }
+
+        // PLAY ONLINE MUSIC HTML
+        if (command === '.play' || command === '.music' || command === '.lagu') {
+            await handlePlayOnline(sock, msg, from, args);
+        }
+
+        // DINO RUN HTML
+        if (command === '.dino' || command === '.dinorun') {
+            await handleDino(sock, msg, from, args);
+        }
+
         // FITUR AI
         if (command === '.ai' || command === '!ai') {
             await handleAi(sock, msg, from, sender, fullTextToSearch, command);
+        }
+
+        // SUPER MARIO BROS HTML
+        if (command === '.mario' || command === '.supermario') {
+            await handleMario(sock, msg, from, args);
+        }   
+
+        // FLAPPY BIRD
+        if (command === '.flappy' || command === '.bird') {
+            await handleFlappy(sock, msg, from, args);
+        }
+
+        // HILL CLIMB RACING
+        if (command === '.hillclimb' || command === '.hcr') {
+            await handleHillClimb(sock, msg, from, args);
+        }
+
+        // TURBO RACE HTML
+        if (command === '.balap' || command === '.racing') {
+            await handleBalap(sock, msg, from);
+        }   
+
+         // KAGE
+        if (command === '.kage' || command === '.hcr') {
+        await handleKage(sock, msg, from, args);
         }
 
         // FITUR FLUX
