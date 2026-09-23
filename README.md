@@ -9,17 +9,16 @@
 
 ---
 
-## = Daftar Fitur
+##  Daftar Fitur
 
 | Kategori | Perintah / Command | Status | Deskripsi |
 | :--- | :--- | :---: | :--- |
-| **Media Downloader** | `.ig`, `.tt`, `.fb` | ✔️ | Mengunduh media dari Instagram, TikTok, dan Facebook secara instan. |
-| **Audio Utility** | `.spotify` | ✔️ | Mengunduh lagu dari Spotify via tautan atau kata kunci. |
-| **AI Integration** | `.ai` | ✔️ | Asisten cerdas dengan kemampuan pemformatan data tabel. |
-| **Image Generator** | `.flux` | ✔️ | Menghasilkan gambar (*Prompt-to-Image*) menggunakan Flux AI. |
-| **Mini Games** | `.ttt` | ✔️ | Permainan Tic-Tac-Toe interaktif multi-pemain dalam grup. |
-| **Media Tools** | `.s` | ✔️ | Konversi gambar atau video pendek menjadi Stiker WhatsApp. |
-| **Group System** | *(Otomatis)* | ✔️ | Radar *Welcome* & *Goodbye* grup tanpa beban database. |
+| **📥 Downloader** | `.ig`, `.tt`, `.fb`, `.spotify` | ✔️ | Mengunduh media dari Instagram, TikTok, Facebook, dan Spotify. |
+| **🎵 Music** | `.play` | ✔️ | Memutar atau mencari lagu berdasarkan judul. |
+| **🤖 AI & Generator** | `.ai`, `.flux` | ✔️ | Chat cerdas dengan AI asisten dan pembuatan gambar (*Prompt-to-Image*) via Flux. |
+| **🎮 Games** | `.ttt`, `.catur`, `.sonik`, `.slot`, `.dino`, `.mario`, `.hillclimb`, `.kage`, `.flappy`, `.balap` | ✔️ | Koleksi game seru! Mainkan Tic-Tac-Toe, Catur, Sonic, Slot, Dino, Super Mario, Hill Climb, Legend of Kage, Flappy Bird, dan Balapan langsung di WA. |
+| **🛠️ Tools** | `.s` | ✔️ | Konversi instan gambar atau video pendek menjadi Stiker WhatsApp. |
+| **👥 Group System** | *(Otomatis)* | ✔️ | Radar *Welcome* & *Goodbye* grup tanpa membebani database. |
 
 ---
 
@@ -32,7 +31,7 @@
 
 ---
 
-## ☁️ Panduan Deployment (VPS / Cloud Server 24/7)
+##  Panduan Deployment (VPS / Cloud Server 24/7)
 
 Panduan ini direkomendasikan jika Anda ingin menjalankan bot secara permanen (24 jam nonstop) di layanan Cloud seperti Microsoft Azure, DigitalOcean, atau AWS menggunakan OS **Ubuntu/Linux**.
 
@@ -75,7 +74,7 @@ pm2 startup
 
 ---
 
-## 💻 Panduan Penggunaan (Lokal / Windows PC)
+##  Panduan Penggunaan (Lokal / Windows PC)
 
 *(Pastikan Anda sudah menginstal Git dan Node.js dari situs resminya).*
 
@@ -98,7 +97,7 @@ node index.js
 
 ---
 
-## 📱 Panduan Instalasi (HP Android / Termux)
+##  Panduan Instalasi (HP Android / Termux)
 
 Bagi pengguna Android yang ingin menjalankan bot ini melalui aplikasi Termux, ikuti langkah-langkah berikut secara berurutan:
 
@@ -132,5 +131,5 @@ node index.js
 
 ---
 
-## 📜 Kredit & Lisensi
+##  Kredit & Lisensi
 Struktur dasar bot ini diadaptasi dari **Ourin & Rimuru**, kemudian dimodifikasi dan dioptimasi secara mandiri untuk performa yang lebih baik. Engine WhatsApp Web API didukung oleh [Baileys](https://github.com/WhiskeySockets/Baileys).
