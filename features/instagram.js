@@ -1,63 +1,49 @@
 const axios = require('axios');
 
-function extractLink(textToParse, keyword) {
-    const urlRegex = /(https?:\/\/[^\s]+)/g; 
-    const links = textToParse.match(urlRegex);
-    if (links) {
-        for (let link of links) {
-            if (link.includes(keyword)) return link; 
-        }
-    }
-    return null;
-}
-
 async function handleInstagram(sock, msg, from, fullTextToSearch) {
-    const url = extractLink(fullTextToSearch, 'instagram');
-    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak ditemukan! Kirim link atau reply pesan.' }, { quoted: msg });
+    const urlRegex = /(https?:\/\/[^\s]+)/g; 
+    const links = fullTextToSearch.match(urlRegex);
+    const url = links ? links.find(l => l.includes('instagram')) : null;
+
+    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak ditemukan! Kirim linknya.' }, { quoted: msg });
     
     const cleanUrl = url.split('?')[0]; 
-    await sock.sendMessage(from, { text: '⏳ Sedang mengunduh media, server API agak lambat akhir-akhir ini, mohon tunggu ya...' }, { quoted: msg });
+    await sock.sendMessage(from, { text: '⏳ Sedang mengunduh media, mohon tunggu sebentar...' }, { quoted: msg });
     
-    let success = false;
     let downloadLinks = [];
-    const TIMEOUT_MS = 30000; // Naikkan waktu tunggu jadi 30 detik
+    const TIMEOUT_MS = 20000;
 
-    // JALUR 1: API Vreden (Endpoint Baru)
+    // API 1: AEMT
     try {
-        console.log('\n🔄 [IG] Mencoba API Vreden...');
-        let resApi = await axios.get(`https://api.vreden.web.id/api/igdl?url=${encodeURIComponent(cleanUrl)}`, { timeout: TIMEOUT_MS });
-        
-        if (resApi.data && resApi.data.result) {
-            // Tangani respons array maupun objek tunggal
-            let items = Array.isArray(resApi.data.result) ? resApi.data.result : [resApi.data.result];
-            for (let item of items) {
-                if (item.url) downloadLinks.push(item.url);
-            }
-            if (downloadLinks.length > 0) success = true;
+        let res = await axios.get(`https://aemt.me/download/igdl?url=${encodeURIComponent(cleanUrl)}`, { timeout: TIMEOUT_MS });
+        if (res.data && res.data.result) {
+            let items = Array.isArray(res.data.result) ? res.data.result : [res.data.result];
+            items.forEach(item => { if (item.url) downloadLinks.push(item.url) });
         }
-    } catch (e) {
-        console.log("⚠️ [LOG] API Vreden Gagal:", e.message);
-    }
+    } catch (e) { console.log("API 1 Gagal"); }
 
-    // JALUR 2: API Siputzx (Ban Serep)
-    if (!success) {
+    // API 2: TIKWMA
+    if (downloadLinks.length === 0) {
         try {
-            console.log('🔄 [IG] Mencoba Fallback Siputzx API...');
-            let resApi = await axios.get(`https://api.siputzx.my.id/api/d/igdl?url=${encodeURIComponent(cleanUrl)}`, { timeout: TIMEOUT_MS });
-            
-            if (resApi.data && resApi.data.data) {
-                for (let item of resApi.data.data) {
-                    if (item.url) downloadLinks.push(item.url);
-                }
-                if (downloadLinks.length > 0) success = true;
+            let res = await axios.get(`https://api.tiklydown.eu.org/api/download/ig?url=${encodeURIComponent(cleanUrl)}`, { timeout: TIMEOUT_MS });
+            if (res.data && res.data.length > 0) {
+                res.data.forEach(item => { if (item.url) downloadLinks.push(item.url) });
             }
-        } catch (e) {
-            console.log("⚠️ [LOG] Siputzx API Gagal:", e.message);
-        }
+        } catch (e) { console.log("API 2 Gagal"); }
     }
 
-    // KIRIM MEDIA
-    if (success && downloadLinks.length > 0) {
+    // API 3: BETABOTZ
+    if (downloadLinks.length === 0) {
+        try {
+            let res = await axios.get(`https://api.betabotz.eu.org/api/download/igdowloader?url=${encodeURIComponent(cleanUrl)}&apikey=BetaBotz`, { timeout: TIMEOUT_MS });
+            if (res.data && res.data.result && res.data.result.message) {
+                res.data.result.message.forEach(item => { if (item.url) downloadLinks.push(item.url) });
+            }
+        } catch (e) { console.log("API 3 Gagal"); }
+    }
+
+    // PROSES PENGIRIMAN
+    if (downloadLinks.length > 0) {
         for (let mediaUrl of downloadLinks) {
             try {
                 let bufResponse = await axios.get(mediaUrl, { responseType: "arraybuffer" });
@@ -69,12 +55,11 @@ async function handleInstagram(sock, msg, from, fullTextToSearch) {
                     await sock.sendMessage(from, { image: buf }, { quoted: msg });
                 }
             } catch (errSend) {
-                console.error('❌ [LOG] Gagal mengirim media (File terlalu besar atau link mati):', errSend.message);
+                console.error('❌ Gagal kirim media');
             }
         }
-        console.log('✅ [LOG] Instagram berhasil diproses & dikirim!');
     } else {
-        sock.sendMessage(from, { text: '❌ Semua server API sedang down/sibuk. Coba lagi dalam beberapa menit.' }, { quoted: msg });
+        sock.sendMessage(from, { text: '❌ Maaf, semua server API sedang down. Coba beberapa jam lagi.' }, { quoted: msg });
     }
 }
 
