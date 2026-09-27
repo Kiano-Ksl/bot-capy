@@ -3,6 +3,8 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 
+const gameMahjong = require('./features/mahjong');
+const gameTetris = require('./features/tetris');
 const handleBalap = require('./features/balap.js');
 const handleKage = require('./features/kage')
 const handleFlappy = require('./features/flappy');
@@ -144,6 +146,8 @@ Halo! Ada yang bisa Capy bantu?
  ◦ *.kage* (Main kage)
  ◦ *.flappy* (Main Flappy Bird)
  ◦ *.balap* (Main Balapan)
+ ◦ *.mahjong* (Main Mahjong)
+ ◦ *.tetris* (Main Tetris)
 
 
 🛠️ *TOOLS*
@@ -206,6 +210,31 @@ Halo! Ada yang bisa Capy bantu?
         // DINO RUN HTML
         if (command === '.dino' || command === '.dinorun') {
             await handleDino(sock, msg, from, args);
+        }
+
+        // MAHJONG HTML
+        if (command === '.mahjong' || command === '.mjong' || command === '.mj' || command === '.kyoko') {
+            // Bantuan khusus agar fitur bawaan gamenya (seperti m.reply) bisa berjalan di bot-mu
+            const mMock = {
+                chat: from,
+                pushName: msg.pushName || "Player",
+                name: msg.pushName || "Player",
+                react: async (emoji) => await sock.sendMessage(from, { react: { text: emoji, key: msg.key } }).catch(()=>{}),
+                reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
+            };
+            await gameMahjong.handler(mMock, { sock });
+        }
+
+        // TETRIS HTML
+        if (command === '.tetris' || command === '.blok' || command === '.tetrisgame') {
+            const mMock = {
+                chat: from,
+                pushName: msg.pushName || "Player",
+                name: msg.pushName || "Player",
+                react: async (emoji) => await sock.sendMessage(from, { react: { text: emoji, key: msg.key } }).catch(()=>{}),
+                reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
+            };
+            await gameTetris.handler(mMock, { sock });
         }
 
         // FITUR AI

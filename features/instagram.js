@@ -1,4 +1,4 @@
-const axios = require('axios');
+const { instagram } = require('../lib/instagramdl');
 
 async function handleInstagram(sock, msg, from, fullTextToSearch) {
     const urlRegex = /(https?:\/\/[^\s]+)/g; 
@@ -7,37 +7,35 @@ async function handleInstagram(sock, msg, from, fullTextToSearch) {
 
     if (!url) return sock.sendMessage(from, { text: '⚠️ Link tidak valid.' }, { quoted: msg });
     
-    await sock.sendMessage(from, { text: '⏳ Sedang mengunduh media...' }, { quoted: msg });
+    await sock.sendMessage(from, { text: '⏳ Mesin mandiri sedang bekerja...' }, { quoted: msg });
     
     try {
-        const apiUrl = `https://api.vreden.web.id/api/igdl?url=${encodeURIComponent(url)}`;
-        let response = await axios.get(apiUrl, { timeout: 30000 });
-        let data = response.data;
+        const res = await instagram.download(url);
 
-        if (!data || !data.result || (Array.isArray(data.result) && data.result.length === 0)) {
-            return sock.sendMessage(from, { text: '❌ Media tidak ditemukan. Pastikan link bukan dari akun Private.' }, { quoted: msg });
+        if (!res.status) {
+            return sock.sendMessage(from, { text: '❌ Gagal: Akses dibatasi oleh Instagram.' }, { quoted: msg });
         }
 
-        let mediaItems = Array.isArray(data.result) ? data.result : [data.result];
-        let captionText = "📸 *IG DOWNLOADER*";
+        const data = res.result.downloadUrls;
+        const captionText = `📸 *IG DOWNLOADER*\n👤 *Akun:* ${res.result?.author?.username || 'Unknown'}\n\n📝 ${res.result?.metadata?.caption || ''}`;
 
-        for (let item of mediaItems) {
-            let mediaUrl = item.url;
-            if (!mediaUrl) continue;
-
-            let bufResponse = await axios.get(mediaUrl, { responseType: "arraybuffer", timeout: 30000 });
-            let buf = Buffer.from(bufResponse.data);
-
-            if (buf.slice(4, 8).toString() === "ftyp") {
-                await sock.sendMessage(from, { video: buf, caption: captionText }, { quoted: msg });
-            } else {
-                await sock.sendMessage(from, { image: buf, caption: captionText }, { quoted: msg });
+        // Jika berhasil dapat Video
+        if (res.result.isVideo && data.videos && data.videos.length > 0) {
+            for (let vid of data.videos) {
+                await sock.sendMessage(from, { video: { url: vid.url }, caption: captionText }, { quoted: msg });
             }
+        } 
+        // Jika dapat Gambar / Slide (Atau jika Reels disembunyikan IG dan diganti foto sampul)
+        else if (res.result.isImage && data.images && data.images.length > 0) {
+            for (let img of data.images) {
+                await sock.sendMessage(from, { image: { url: img.url }, caption: captionText }, { quoted: msg });
+            }
+        } else {
+            sock.sendMessage(from, { text: '❌ Media tidak ditemukan atau diblokir Instagram.' }, { quoted: msg });
         }
-        
     } catch (e) {
-        console.error('❌ Error IG:', e.message);
-        sock.sendMessage(from, { text: '❌ Server API sedang sibuk atau link tidak valid.' }, { quoted: msg });
+        console.error('❌ Error IG:', e);
+        sock.sendMessage(from, { text: '❌ Terjadi kesalahan sistem.' }, { quoted: msg });
     }
 }
 
