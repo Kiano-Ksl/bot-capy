@@ -1,44 +1,66 @@
-// File: features/instagram.js
-const { instagram } = require('../lib/instagramdl'); // Memanggil mesin baru dari folder lib
+const { instagram } = require('../lib/instagramdl');
+const { XeonInstaMp4 } = require('../lib/XeonInstaMp4');
 
 async function handleInstagram(sock, msg, from, fullTextToSearch) {
     const urlRegex = /(https?:\/\/[^\s]+)/g; 
     const links = fullTextToSearch.match(urlRegex);
     const url = links ? links.find(l => l.includes('instagram')) : null;
 
-    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak ditemukan! Kirim link atau reply pesan.' }, { quoted: msg });
+    if (!url) return sock.sendMessage(from, { text: '⚠️ Link tidak valid.' }, { quoted: msg });
     
-    await sock.sendMessage(from, { text: '⏳ Mesin mandiri sedang bekerja mengekstrak media...' }, { quoted: msg });
+    // Pesan loading simpel
+    await sock.sendMessage(from, { text: '⏳ Tunggu sebentar...' }, { quoted: msg });
     
     try {
-        // Menyalakan mesin instagramdl
-        const res = await instagram.download(url);
+        let isReel = url.includes('/reel/') || url.includes('/reels/') || url.includes('/tv/');
+        let videoUrl = null;
+        let captionText = "📸 *IG DOWNLOADER*";
 
-        if (!res.status) {
-            return sock.sendMessage(from, { text: `❌ Gagal mengambil data: ${res.error}` }, { quoted: msg });
+        // 1. Coba pakai mesin utama
+        const res = await instagram.download(url);
+        
+        if (res.status) {
+            captionText = `📸 *IG DOWNLOADER*\n👤 *Akun:* ${res.result.author?.username || 'Unknown'}\n\n📝 ${res.result.metadata?.caption || ''}`;
+            
+            // Jika mesin utama sukses dapat video
+            if (res.result.isVideo && res.result.downloadUrls.videos.length > 0) {
+                videoUrl = res.result.downloadUrls.videos[0].url;
+            } 
+            // Jika link-nya Reels tapi mesin utama cuma dapat gambar (kena blokir)
+            else if (isReel && res.result.isImage) {
+                console.log("⚠️ Mesin utama gagal ambil video Reels, mengalihkan ke mesin SaveFrom...");
+            }
+            // Jika murni post foto/slide biasa
+            else if (res.result.isImage && res.result.downloadUrls.images.length > 0) {
+                for (let img of res.result.downloadUrls.images) {
+                    await sock.sendMessage(from, { image: { url: img.url }, caption: captionText }, { quoted: msg });
+                }
+                return; 
+            }
         }
 
-        const data = res.result.downloadUrls;
-        const captionText = `📸 *BOT CAPY - IG DOWNLOADER*\n👤 *Akun:* ${res.result.author.username}\n\n📝 ${res.result.metadata.caption}`;
+        // 2. Jika video gagal diambil mesin utama, jalankan mesin cadangan (XeonInstaMp4)
+        if (!videoUrl) {
+            try {
+                let backupRes = await XeonInstaMp4(url);
+                if (backupRes && backupRes.length > 0) {
+                    videoUrl = backupRes[0].url; 
+                }
+            } catch (backupErr) {
+                console.log("❌ Mesin cadangan juga gagal:", backupErr.message);
+            }
+        }
 
-        // Jika hasilnya Video
-        if (res.result.isVideo && data.videos.length > 0) {
-            for (let vid of data.videos) {
-                await sock.sendMessage(from, { video: { url: vid.url }, caption: captionText }, { quoted: msg });
-            }
-        } 
-        // Jika hasilnya Gambar / Slide (Postingan foto biasa/banyak foto)
-        else if (res.result.isImage && data.images.length > 0) {
-            for (let img of data.images) {
-                await sock.sendMessage(from, { image: { url: img.url }, caption: captionText }, { quoted: msg });
-            }
+        // 3. Kirim hasilnya
+        if (videoUrl) {
+            await sock.sendMessage(from, { video: { url: videoUrl }, caption: captionText }, { quoted: msg });
         } else {
-            sock.sendMessage(from, { text: '❌ Media tidak ditemukan di link tersebut.' }, { quoted: msg });
+            sock.sendMessage(from, { text: '❌ Gagal mengunduh video. Sistem Instagram sedang membatasi akses.' }, { quoted: msg });
         }
 
     } catch (e) {
-        console.error('❌ Error Mesin IG:', e);
-        sock.sendMessage(from, { text: '❌ Terjadi kesalahan fatal pada mesin.' }, { quoted: msg });
+        console.error('❌ Error System:', e);
+        sock.sendMessage(from, { text: '❌ Terjadi kesalahan pada sistem.' }, { quoted: msg });
     }
 }
 
