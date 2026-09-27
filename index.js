@@ -225,18 +225,7 @@ Halo! Ada yang bisa Capy bantu?
             await gameMahjong.handler(mMock, { sock });
         }
 
-        // TETRIS HTML
-        if (command === '.tetris' || command === '.blok' || command === '.tetrisgame') {
-            const mMock = {
-                chat: from,
-                pushName: msg.pushName || "Player",
-                name: msg.pushName || "Player",
-                react: async (emoji) => await sock.sendMessage(from, { react: { text: emoji, key: msg.key } }).catch(()=>{}),
-                reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
-            };
-            await gameTetris.handler(mMock, { sock });
-        }
-
+      
         // FITUR AI
         if (command === '.ai' || command === '!ai') {
             await handleAi(sock, msg, from, sender, fullTextToSearch, command);
