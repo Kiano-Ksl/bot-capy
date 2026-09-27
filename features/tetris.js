@@ -307,37 +307,16 @@ grid = emptyGrid(); next = randomPiece(); draw(); drawNext();
 }
 
 async function sendGamePlayer(sock, m, html) {
-  if (typeof html !== "string" || !html.trim()) throw new Error("HTML game kosong");
-  const responseId = randomUUID();
-  await sock.sendMessage(m.chat, {
-    botForwardedMessage: {
-      message: {
-        richResponseMessage: {
-          messageType: 1,
-          unifiedResponse: {
-            data: Buffer.from(JSON.stringify({
-              __typename: "GenAIUnifiedResponse",
-              response_id: responseId,
-              sections: [{
-                __typename: "GenAIUnifiedResponseSection",
-                view_model: {
-                  __typename: "GenAISingleLayoutViewModel",
-                  primitive: {
-                    __typename: "FOAHtmlPrimitiveDemoDONOTUSE",
-                    trusted_sources: [],
-                    payload: html
-                  }
-                }
-              }]
-            })).toString("base64")
-          },
-          contextInfo: { isForwarded: true, forwardingScore: 1, forwardOrigin: 4 }
-        }
-      }
-    }
-  }, { additionalAttributes: { type: "text" } });
-}
+    if (typeof html !== "string" || !html.trim()) throw new Error("HTML game kosong");
 
+    // Menggunakan cara pengiriman dokumen HTML standar seperti game Mario/Dino
+    await sock.sendMessage(m.chat, {
+        document: Buffer.from(html, 'utf-8'),
+        fileName: 'Tetris_Capy.html',
+        mimetype: 'text/html',
+        caption: `🎮 *TETRIS GAME*\n\nSilakan download dan buka file HTML di atas untuk bermain Tetris!`
+    }, { quoted: m });
+}
 async function handler(m, { sock }) {
   try {
     const playerName = m.pushName || m.name || "Sensei";
