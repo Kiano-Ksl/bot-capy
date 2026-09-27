@@ -147,7 +147,6 @@ Halo! Ada yang bisa Capy bantu?
  ◦ *.flappy* (Main Flappy Bird)
  ◦ *.balap* (Main Balapan)
  ◦ *.mahjong* (Main Mahjong)
- ◦ *.tetris* (Main Tetris)
 
 
 🛠️ *TOOLS*
