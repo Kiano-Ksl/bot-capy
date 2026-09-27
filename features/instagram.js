@@ -1,95 +1,44 @@
 // File: features/instagram.js
-const axios = require('axios');
-const cheerio = require('cheerio');
-const FormData = require('form-data');
-
-function extractLink(textToParse, keyword) {
-    const urlRegex = /(https?:\/\/[^\s]+)/g; 
-    const links = textToParse.match(urlRegex);
-    if (links) {
-        for (let link of links) {
-            if (link.includes(keyword)) return link; 
-        }
-    }
-    return null;
-}
+const { instagram } = require('../lib/instagramdl'); // Memanggil mesin baru dari folder lib
 
 async function handleInstagram(sock, msg, from, fullTextToSearch) {
-    const url = extractLink(fullTextToSearch, 'instagram');
+    const urlRegex = /(https?:\/\/[^\s]+)/g; 
+    const links = fullTextToSearch.match(urlRegex);
+    const url = links ? links.find(l => l.includes('instagram')) : null;
+
     if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak ditemukan! Kirim link atau reply pesan.' }, { quoted: msg });
     
-    const cleanUrl = url.split('?')[0]; 
-    await sock.sendMessage(from, { text: '⏳ Sedang mengekstrak media Instagram...' }, { quoted: msg });
+    await sock.sendMessage(from, { text: '⏳ Mesin mandiri sedang bekerja mengekstrak media...' }, { quoted: msg });
     
-    let success = false;
-    let downloadLinks = [];
-
-    // SCRAPING
     try {
-        console.log(`\n🔄 [IG] Menjalankan Scraper Snapinsta...`);
-        const form = new FormData();
-        form.append("url", cleanUrl);
-        form.append("action", "post");
+        // Menyalakan mesin instagramdl
+        const res = await instagram.download(url);
 
-        const res = await axios.post("https://snapinsta.top/action.php", form, {
-            headers: {
-                ...form.getHeaders(),
-                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                "accept": "*/*",
-                "origin": "https://snapinsta.top",
-                "referer": "https://snapinsta.top/"
+        if (!res.status) {
+            return sock.sendMessage(from, { text: `❌ Gagal mengambil data: ${res.error}` }, { quoted: msg });
+        }
+
+        const data = res.result.downloadUrls;
+        const captionText = `📸 *BOT CAPY - IG DOWNLOADER*\n👤 *Akun:* ${res.result.author.username}\n\n📝 ${res.result.metadata.caption}`;
+
+        // Jika hasilnya Video
+        if (res.result.isVideo && data.videos.length > 0) {
+            for (let vid of data.videos) {
+                await sock.sendMessage(from, { video: { url: vid.url }, caption: captionText }, { quoted: msg });
             }
-        });
+        } 
+        // Jika hasilnya Gambar / Slide (Postingan foto biasa/banyak foto)
+        else if (res.result.isImage && data.images.length > 0) {
+            for (let img of data.images) {
+                await sock.sendMessage(from, { image: { url: img.url }, caption: captionText }, { quoted: msg });
+            }
+        } else {
+            sock.sendMessage(from, { text: '❌ Media tidak ditemukan di link tersebut.' }, { quoted: msg });
+        }
 
-        const $= cheerio.load(res.data);$(".download-items__btn a").each((_, el) => {
-            let path = $(el).attr("href");
-            if (!path) return;
-            if (!path.startsWith("http")) path = "https://snapinsta.top" + path;
-            downloadLinks.push(path);
-        });
-
-        if (downloadLinks.length > 0) success = true;
     } catch (e) {
-        console.log("⚠️ [LOG] Snapinsta Gagal:", e.message);
-    }
-
-    // NEXRAY API
-    if (!success) {
-        try {
-            console.log(`🔄 [IG] Mencoba Fallback Nexray API...`);
-            let resApi = await axios.get(`https://api.nexray.eu.cc/downloader/v2/instagram?url=${encodeURIComponent(cleanUrl)}`);
-            let data = resApi.data;
-
-            if (data.status && data.result?.media?.length) {
-                for (let item of data.result.media) {
-                    downloadLinks.push(item.url);
-                }
-                success = true;
-            }
-        } catch (e) {
-            console.log("⚠️ [LOG] Nexray API Gagal:", e.message);
-        }
-    }
-
-    // KIRIM MEDIA
-    if (success && downloadLinks.length > 0) {
-        for (let mediaUrl of downloadLinks) {
-            try {
-                let bufResponse = await axios.get(mediaUrl, { responseType: "arraybuffer" });
-                let buf = Buffer.from(bufResponse.data);
-
-                if (buf.slice(4, 8).toString() === "ftyp") {
-                    await sock.sendMessage(from, { video: buf }, { quoted: msg });
-                } else {
-                    await sock.sendMessage(from, { image: buf }, { quoted: msg });
-                }
-            } catch (errSend) {
-                console.error('❌ [LOG] Gagal mengirim media:', errSend.message);
-            }
-        }
-        console.log('✅ [LOG] Instagram berhasil diproses & dikirim!');
-    } else {
-        sock.sendMessage(from, { text: '❌ Gagal. Pastikan akun tidak di-private.' }, { quoted: msg });
+        console.error('❌ Error Mesin IG:', e);
+        sock.sendMessage(from, { text: '❌ Terjadi kesalahan fatal pada mesin.' }, { quoted: msg });
     }
 }
 
