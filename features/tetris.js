@@ -4,7 +4,7 @@ const config = {
   name: "tetris",
   alias: ["blok", "tetrisgame"],
   category: "game",
-  description: "Mainkan Tetris langsung di chat lewat GenAI HTML Player",
+  description: "Mainkan Tetris langsung di chat lewat HTML Player",
   usage: ".tetris",
   example: ".tetris"
 };
@@ -19,7 +19,7 @@ function escapeHtml(text = "") {
 }
 
 function createTetrisGame({ playerName }) {
-  const safeName = escapeHtml(playerName || "Sensei");
+  const safeName = escapeHtml(playerName || "Player");
 
   return `
 <style>
@@ -307,24 +307,28 @@ grid = emptyGrid(); next = randomPiece(); draw(); drawNext();
 }
 
 async function sendGamePlayer(sock, m, html) {
-    if (typeof html !== "string" || !html.trim()) throw new Error("HTML game kosong");
-
-    // Menggunakan cara pengiriman dokumen HTML standar seperti game Mario/Dino
-    await sock.sendMessage(m.chat, {
-        document: Buffer.from(html, 'utf-8'),
-        fileName: 'Tetris_Capy.html',
-        mimetype: 'text/html',
-        caption: `🎮 *TETRIS GAME*\n\nSilakan download dan buka file HTML di atas untuk bermain Tetris!`
-    }, { quoted: m });
+  if (typeof html !== "string" || !html.trim()) throw new Error("HTML game kosong");
+  
+  // Menggunakan pengiriman HTML standar yang terbukti jalan di bot-mu
+  await sock.sendMessage(m.chat, {
+      document: Buffer.from(html, 'utf-8'),
+      fileName: 'Tetris_Capy.html',
+      mimetype: 'text/html',
+      caption: '🎮 *TETRIS GAME*\n\nSilakan download dan buka file HTML di atas untuk bermain Tetris!'
+  }, { quoted: m });
 }
+
 async function handler(m, { sock }) {
   try {
-    const playerName = m.pushName || m.name || "Sensei";
+    if (m.react) await m.react("🎮");
+    const playerName = m.pushName || m.name || "Player";
     const html = createTetrisGame({ playerName });
     await sendGamePlayer(sock, m, html);
+    if (m.react) await m.react("✅");
   } catch (error) {
     console.error("[TETRIS ERROR]", error);
-    try { await m.reply("〄 *TETRIS GAGAL*\n\n" + `〄 ${error?.message || "Unknown error"}`); } catch {}
+    try { if (m.react) await m.react("❌"); } catch {}
+    try { if (m.reply) await m.reply("〄 *TETRIS GAGAL*\n\n" + `〄 ${error?.message || "Unknown error"}`); } catch {}
   }
 }
 
