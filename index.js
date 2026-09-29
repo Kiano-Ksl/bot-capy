@@ -3,10 +3,8 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 
-const gameMahjong = require('./features/mahjong');
-const gameTetris = require('./features/tetris');
 const handleBalap = require('./features/balap.js');
-const handleKage = require('./features/kage')
+const handleKage = require('./features/kage');
 const handleFlappy = require('./features/flappy');
 const handleHillClimb = require('./features/hillclimb');
 const handleMario = require('./features/mario');
@@ -23,6 +21,7 @@ const handleSpotify = require('./features/spotify');
 const { handleTictactoeCommand, handleTictactoeMove } = require('./features/tictactoe');
 const handleAi = require('./features/ai'); 
 const handleFlux = require('./features/flux');
+const gameMahjong = require('./features/mahjong'); // Mahjong tetap dipertahankan
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_session');
@@ -148,7 +147,6 @@ Halo! Ada yang bisa Capy bantu?
  ◦ *.balap* (Main Balapan)
  ◦ *.mahjong* (Main Mahjong)
 
-
 🛠️ *TOOLS*
  ◦ *.s* (Ubah Foto/Video jadi Stiker)
             `;
@@ -211,20 +209,6 @@ Halo! Ada yang bisa Capy bantu?
             await handleDino(sock, msg, from, args);
         }
 
-        // MAHJONG HTML
-        if (command === '.mahjong' || command === '.mjong' || command === '.mj' || command === '.kyoko') {
-            // Bantuan khusus agar fitur bawaan gamenya (seperti m.reply) bisa berjalan di bot-mu
-            const mMock = {
-                chat: from,
-                pushName: msg.pushName || "Player",
-                name: msg.pushName || "Player",
-                react: async (emoji) => await sock.sendMessage(from, { react: { text: emoji, key: msg.key } }).catch(()=>{}),
-                reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
-            };
-            await gameMahjong.handler(mMock, { sock });
-        }
-
-      
         // FITUR AI
         if (command === '.ai' || command === '!ai') {
             await handleAi(sock, msg, from, sender, fullTextToSearch, command);
@@ -252,7 +236,19 @@ Halo! Ada yang bisa Capy bantu?
 
          // KAGE
         if (command === '.kage' || command === '.hcr') {
-        await handleKage(sock, msg, from, args);
+            await handleKage(sock, msg, from, args);
+        }
+
+        // MAHJONG HTML
+        if (command === '.mahjong' || command === '.mjong' || command === '.mj' || command === '.kyoko') {
+            const mMock = {
+                chat: from,
+                pushName: msg.pushName || "Player",
+                name: msg.pushName || "Player",
+                react: async (emoji) => await sock.sendMessage(from, { react: { text: emoji, key: msg.key } }).catch(()=>{}),
+                reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
+            };
+            await gameMahjong.handler(mMock, { sock });
         }
 
         // FITUR FLUX
