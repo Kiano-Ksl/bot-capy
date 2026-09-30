@@ -3,6 +3,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 
+const handleAngryBird = require('./features/angrybird');
 const handleBalap = require('./features/balap.js');
 const handleKage = require('./features/kage');
 const handleFlappy = require('./features/flappy');
@@ -21,7 +22,7 @@ const handleSpotify = require('./features/spotify');
 const { handleTictactoeCommand, handleTictactoeMove } = require('./features/tictactoe');
 const handleAi = require('./features/ai'); 
 const handleFlux = require('./features/flux');
-const gameMahjong = require('./features/mahjong'); // Mahjong tetap dipertahankan
+const gameMahjong = require('./features/mahjong');
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_session');
@@ -249,6 +250,18 @@ Halo! Ada yang bisa Capy bantu?
                 reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
             };
             await gameMahjong.handler(mMock, { sock });
+        }
+
+        // ANGRY BIRD HTML
+        if (command === '.angrybird' || command === '.ab' || command === '.burung') {
+            const mMock = {
+                chat: from,
+                pushName: msg.pushName || "Player",
+                name: msg.pushName || "Player",
+                react: async (emoji) => await sock.sendMessage(from, { react: { text: emoji, key: msg.key } }).catch(()=>{}),
+                reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
+            };
+            await handleAngryBird.handler(mMock, { sock });
         }
 
         // FITUR FLUX
