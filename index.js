@@ -147,6 +147,7 @@ Halo! Ada yang bisa Capy bantu?
  ◦ *.flappy* (Main Flappy Bird)
  ◦ *.balap* (Main Balapan)
  ◦ *.mahjong* (Main Mahjong)
+  ◦ *.angrybird* (Main Angry Birds)
 
 🛠️ *TOOLS*
  ◦ *.s* (Ubah Foto/Video jadi Stiker)
