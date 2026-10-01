@@ -15,28 +15,37 @@ async function handleInstagram(sock, msg, from, fullTextToSearch) {
     
     try {
         console.log(`\n🔄 [IG] Menjalankan API Ryzendesu...`);
-        // Memanggil API khusus downloader
         const { data } = await axios.get(`https://api.ryzendesu.vip/api/downloader/igdl?url=${encodeURIComponent(url)}`, {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         });
 
-        // Menangkap data dari API
         const mediaArray = data.data || data.result;
 
         if (!mediaArray || mediaArray.length === 0) {
             throw new Error('Media tidak ditemukan atau akun di-private.');
         }
 
-        // Looping untuk mengirim semua slide jika postingan berupa carousel/banyak foto
+        // Looping untuk mengirim semua media
         for (let item of mediaArray) {
-            if (item.url.includes('.mp4') || item.url.includes('video')) {
+            const mediaUrl = item.url;
+            if (!mediaUrl) continue;
+
+            // Unduh sebagai data mentah (Buffer)
+            const mediaRes = await axios.get(mediaUrl, { 
+                responseType: "arraybuffer",
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            const buf = Buffer.from(mediaRes.data);
+
+            // Cek DNA file (Magic Bytes): "ftyp" adalah ciri khas file video MP4
+            if (buf.length > 8 && buf.slice(4, 8).toString() === "ftyp") {
                 await sock.sendMessage(from, { 
-                    video: { url: item.url }, 
+                    video: buf, 
                     caption: '✅ *INSTAGRAM DOWNLOADER*' 
                 }, { quoted: msg });
             } else {
                 await sock.sendMessage(from, { 
-                    image: { url: item.url }, 
+                    image: buf, 
                     caption: '✅ *INSTAGRAM DOWNLOADER*' 
                 }, { quoted: msg });
             }
