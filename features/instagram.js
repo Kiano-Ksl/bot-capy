@@ -1,5 +1,5 @@
 // File: features/instagram.js
-const axios = require('axios');
+const { instagram } = require('../lib/instagramdl');
 
 function extractLink(textToParse) {
     const urlRegex = /(https?:\/\/[^\s]+)/g; 
@@ -9,64 +9,49 @@ function extractLink(textToParse) {
 
 async function handleInstagram(sock, msg, from, fullTextToSearch) {
     const url = extractLink(fullTextToSearch);
-    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak ditemukan!' }, { quoted: msg });
+    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak valid.' }, { quoted: msg });
     
-    await sock.sendMessage(from, { text: '⏳ Sedang menarik Reels/Postingan...' }, { quoted: msg });
+    await sock.sendMessage(from, { text: '⏳ Mesin mandiri sedang bekerja...' }, { quoted: msg });
     
-    // SISTEM GATLING GUN: 3 API berbeda sebagai peluru
-    const apis = [
-        `https://api.siputzx.my.id/api/d/igdl?url=${encodeURIComponent(url)}`,
-        `https://bk9.fun/download/instagram?url=${encodeURIComponent(url)}`,
-        `https://api.vreden.web.id/api/igdownload?url=${encodeURIComponent(url)}`
-    ];
-
-    let mediaData = null;
-
-    // Bot akan menembak API satu per satu
-    for (let api of apis) {
-        try {
-            console.log(`🔄 [IG] Mencoba peluru API: ${api.split('/')[2]}`);
-            const { data } = await axios.get(api, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-
-            // Menyesuaikan struktur data dari masing-masing pembuat API
-            let results = data.data || data.result || data.BK9;
-            
-            if (results && results.length > 0) {
-                mediaData = results;
-                console.log(`✅ [IG] Sukses ditembus oleh: ${api.split('/')[2]}`);
-                break; // Hentikan pencarian jika sudah dapat videonya
-            }
-        } catch (e) {
-            console.log(`⚠️ [IG] ${api.split('/')[2]} Gagal: Meleset.`);
-        }
-    }
-
-    if (!mediaData) {
-        return sock.sendMessage(from, { text: '❌ Semua server gagal menembus Instagram atau link di-private.' }, { quoted: msg });
-    }
-
     try {
-        for (let item of mediaData) {
-            const mediaUrl = typeof item === 'string' ? item : item.url;
-            if (!mediaUrl) continue;
+        // Memanggil mesin scraper mandiri dari folder lib
+        const res = await instagram.download(url);
 
-            // Tarik sebagai buffer mentah
-            const mediaRes = await axios.get(mediaUrl, { 
-                responseType: "arraybuffer",
-                headers: { 'User-Agent': 'Mozilla/5.0' }
-            });
-            const buf = Buffer.from(mediaRes.data);
-
-            // Cek DNA file ("ftyp" = Video MP4)
-            if (buf.length > 8 && buf.slice(4, 8).toString() === "ftyp") {
-                await sock.sendMessage(from, { video: buf, caption: '✅ *IG DOWNLOADER*' }, { quoted: msg });
-            } else {
-                await sock.sendMessage(from, { image: buf, caption: '✅ *IG DOWNLOADER*' }, { quoted: msg });
-            }
+        if (!res.status) {
+            return sock.sendMessage(from, { text: `❌ Gagal: Akses dibatasi oleh Instagram.\nDetail: ${res.error}` }, { quoted: msg });
         }
-    } catch (err) {
-        console.error('❌ Error saat mengirim:', err.message);
-        sock.sendMessage(from, { text: `❌ Gagal mengirim file dari server ke WhatsApp.` }, { quoted: msg });
+
+        const data = res.result.downloadUrls;
+        const author = res.result.author?.username || res.result.author || 'Unknown';
+        const caption = res.result.metadata?.caption || res.result.caption || '';
+        const captionText = `📸 *IG DOWNLOADER*\n👤 *Akun:* @${author}\n\n📝 ${caption}`;
+
+        let hasMedia = false;
+
+        // 1. Coba kirim Video (Jika berhasil dapat)
+        if (data.videos && data.videos.length > 0) {
+            for (let vid of data.videos) {
+                await sock.sendMessage(from, { video: { url: vid.url }, caption: captionText }, { quoted: msg });
+            }
+            hasMedia = true;
+        } 
+        // 2. Kirim Gambar / Slide (Reels yang diganti foto oleh IG akan masuk ke sini)
+        else if (data.images && data.images.length > 0) {
+            for (let img of data.images) {
+                await sock.sendMessage(from, { image: { url: img.url }, caption: captionText }, { quoted: msg });
+            }
+            hasMedia = true;
+        }
+
+        if (!hasMedia) {
+            sock.sendMessage(from, { text: '❌ Media tidak ditemukan. Mungkin hanya foto profil atau akun diprivate.' }, { quoted: msg });
+        } else {
+            console.log('✅ [LOG] Instagram (Mode Dasar) sukses dikirim!');
+        }
+
+    } catch (e) {
+        console.error('❌ Error IG:', e);
+        sock.sendMessage(from, { text: '❌ Terjadi kesalahan fatal di sistem.' }, { quoted: msg });
     }
 }
 
