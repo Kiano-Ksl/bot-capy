@@ -1,5 +1,4 @@
 // File: features/instagram.js
-const { instagram } = require('../lib/instagramdl');
 const axios = require('axios');
 
 function extractLink(textToParse) {
@@ -10,76 +9,64 @@ function extractLink(textToParse) {
 
 async function handleInstagram(sock, msg, from, fullTextToSearch) {
     const url = extractLink(fullTextToSearch);
-    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak valid.' }, { quoted: msg });
+    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak ditemukan!' }, { quoted: msg });
     
-    await sock.sendMessage(from, { text: '🕵️‍♂️ Mesin pintar sedang membedah Instagram...' }, { quoted: msg });
+    await sock.sendMessage(from, { text: '⏳ Sedang menarik Reels/Postingan...' }, { quoted: msg });
     
-    try {
-        // TAHAP 1: MESIN SPOOFING MANDIRI (Fokus ke Foto & Postingan)
-        const res = await instagram.download(url);
+    // SISTEM GATLING GUN: 3 API berbeda sebagai peluru
+    const apis = [
+        `https://api.siputzx.my.id/api/d/igdl?url=${encodeURIComponent(url)}`,
+        `https://bk9.fun/download/instagram?url=${encodeURIComponent(url)}`,
+        `https://api.vreden.web.id/api/igdownload?url=${encodeURIComponent(url)}`
+    ];
 
-        if (res.status && res.result && res.result.downloadUrls) {
-            const data = res.result.downloadUrls;
-            const captionText = `📸 *IG DOWNLOADER*\n👤 *Akun:* @${res.result.author}\n\n📝 ${res.result.caption}`;
-            let hasMedia = false;
+    let mediaData = null;
 
-            // Prioritas 1: Coba kirim Video jika mesin berhasil dapat
-            if (data.videos && data.videos.length > 0) {
-                for (let vid of data.videos) {
-                    await sock.sendMessage(from, { video: { url: vid.url }, caption: captionText }, { quoted: msg });
-                }
-                hasMedia = true;
-            } 
-            // Prioritas 2: Kirim Gambar
-            else if (data.images && data.images.length > 0) {
-                for (let img of data.images) {
-                    await sock.sendMessage(from, { image: { url: img.url }, caption: captionText }, { quoted: msg });
-                }
-                hasMedia = true;
-            }
-
-            // Jika berhasil dapat media, hentikan proses di sini
-            if (hasMedia) {
-                console.log('✅ [LOG] Instagram (Spoofing) sukses dikirim!');
-                return;
-            }
-        }
-        
-        throw new Error("Mesin internal gagal menemukan media (Kemungkinan Reels diproteksi).");
-
-    } catch (e) {
-        console.log(`⚠️ [LOG] Mesin internal gagal: ${e.message}. Beralih ke API Cadangan...`);
-        
-        // TAHAP 2: MESIN CADANGAN API VREDEN (Spesialis Reels & Video)
+    // Bot akan menembak API satu per satu
+    for (let api of apis) {
         try {
-            const { data } = await axios.get(`https://api.vreden.my.id/api/igdownload?url=${encodeURIComponent(url)}`, {
+            console.log(`🔄 [IG] Mencoba peluru API: ${api.split('/')[2]}`);
+            const { data } = await axios.get(api, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+
+            // Menyesuaikan struktur data dari masing-masing pembuat API
+            let results = data.data || data.result || data.BK9;
+            
+            if (results && results.length > 0) {
+                mediaData = results;
+                console.log(`✅ [IG] Sukses ditembus oleh: ${api.split('/')[2]}`);
+                break; // Hentikan pencarian jika sudah dapat videonya
+            }
+        } catch (e) {
+            console.log(`⚠️ [IG] ${api.split('/')[2]} Gagal: Meleset.`);
+        }
+    }
+
+    if (!mediaData) {
+        return sock.sendMessage(from, { text: '❌ Semua server gagal menembus Instagram atau link di-private.' }, { quoted: msg });
+    }
+
+    try {
+        for (let item of mediaData) {
+            const mediaUrl = typeof item === 'string' ? item : item.url;
+            if (!mediaUrl) continue;
+
+            // Tarik sebagai buffer mentah
+            const mediaRes = await axios.get(mediaUrl, { 
+                responseType: "arraybuffer",
                 headers: { 'User-Agent': 'Mozilla/5.0' }
             });
+            const buf = Buffer.from(mediaRes.data);
 
-            const mediaArray = data.result || data.data; 
-            if (!mediaArray || mediaArray.length === 0) throw new Error('API Cadangan kosong.');
-
-            for (let item of mediaArray) {
-                const mediaUrl = typeof item === 'string' ? item : item.url;
-                if (!mediaUrl) continue;
-
-                // Download file mentah untuk mengecek jenisnya secara akurat
-                const mediaRes = await axios.get(mediaUrl, { responseType: "arraybuffer" });
-                const buf = Buffer.from(mediaRes.data);
-
-                // Cek Magic Bytes "ftyp" (Tanda file MP4/Video)
-                if (buf.length > 8 && buf.slice(4, 8).toString() === "ftyp") {
-                    await sock.sendMessage(from, { video: buf, caption: '✅ *IG DOWNLOADER*' }, { quoted: msg });
-                } else {
-                    await sock.sendMessage(from, { image: buf, caption: '✅ *IG DOWNLOADER*' }, { quoted: msg });
-                }
+            // Cek DNA file ("ftyp" = Video MP4)
+            if (buf.length > 8 && buf.slice(4, 8).toString() === "ftyp") {
+                await sock.sendMessage(from, { video: buf, caption: '✅ *IG DOWNLOADER*' }, { quoted: msg });
+            } else {
+                await sock.sendMessage(from, { image: buf, caption: '✅ *IG DOWNLOADER*' }, { quoted: msg });
             }
-            console.log('✅ [LOG] Instagram (API Cadangan) sukses dikirim!');
-
-        } catch (err) {
-            console.error('❌ Semua metode IG Gagal:', err.message);
-            sock.sendMessage(from, { text: '❌ Media tidak ditemukan. Pastikan link valid dan akun tidak di-private.' }, { quoted: msg });
         }
+    } catch (err) {
+        console.error('❌ Error saat mengirim:', err.message);
+        sock.sendMessage(from, { text: `❌ Gagal mengirim file dari server ke WhatsApp.` }, { quoted: msg });
     }
 }
 
