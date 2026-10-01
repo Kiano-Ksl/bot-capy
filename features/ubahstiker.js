@@ -3,47 +3,41 @@ const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const sharp = require('sharp');
 const axios = require('axios');
 const FormData = require('form-data');
-
-const EZGIF_BASE = 'https://ezgif.com';
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+const cheerio = require('cheerio');
 
 // ==========================================
 // MESIN EZGIF (UNTUK STIKER GERAK -> MP4)
 // ==========================================
-async function webpToMp4Ezgif(buffer) {
-    // 1. Upload ke EZGif
+async function webpToMp4(buffer) {
+    // 1. Upload ke EZGif dengan pembungkusan (Boundary) yang benar
     const form = new FormData();
-    form.append('new-image', buffer, 'sticker.webp');
-    form.append('upload', 'Upload!');
+    form.append('new-image-url', '');
+    form.append('new-image', buffer, { filename: 'sticker.webp', contentType: 'image/webp' });
 
-    const resUpload = await axios.post(`${EZGIF_BASE}/webp-to-mp4`, form, {
-        headers: { ...form.getHeaders(), 'User-Agent': UA }
+    // s6.ezgif.com adalah server khusus upload yang paling stabil
+    const res = await axios.post('https://s6.ezgif.com/webp-to-mp4', form, {
+        headers: form.getHeaders()
     });
+    
+    const $ = cheerio.load(res.data);
+    const file = $('input[name="file"]').val();
+    if (!file) throw new Error('Gagal mendapatkan ID file dari server EZGif.');
 
-    const htmlUpload = resUpload.data;
-    const fileMatch = htmlUpload.match(/name="file" value="(.*?)"/);
-    if (!fileMatch) throw new Error('Gagal upload ke EZGif.');
-    const fileId = fileMatch[1];
+    // 2. Eksekusi Konversi ke MP4
+    const form2 = new FormData();
+    form2.append('file', file);
+    form2.append('convert', 'Convert WebP to MP4!');
 
-    // 2. Convert ke MP4
-    const formConvert = new FormData();
-    formConvert.append('file', fileId);
-    formConvert.append('background', '#ffffff');
-    formConvert.append('ajax', 'true');
-
-    const resConvert = await axios.post(`${EZGIF_BASE}/webp-to-mp4/${fileId}?ajax=true`, formConvert, {
-        headers: { ...formConvert.getHeaders(), 'User-Agent': UA }
+    const res2 = await axios.post(`https://ezgif.com/webp-to-mp4/${file}`, form2, {
+        headers: form2.getHeaders()
     });
-
-    const htmlConvert = resConvert.data;
-    const mp4Match = htmlConvert.match(/<source src="(.*?)"/);
-    if (!mp4Match) throw new Error('Gagal mendapatkan link MP4 dari EZGif.');
-
-    let mp4Url = mp4Match[1];
-    if (mp4Url.startsWith('//')) mp4Url = 'https:' + mp4Url;
+    
+    const $2 = cheerio.load(res2.data);
+    const resultUrl = 'https:' + $2('div#output > p.outfile > video > source').attr('src');
+    if (!resultUrl || resultUrl === 'https:undefined') throw new Error('Gagal memproses video MP4.');
 
     // 3. Download hasil MP4
-    const resMp4 = await axios.get(mp4Url, { responseType: 'arraybuffer' });
+    const resMp4 = await axios.get(resultUrl, { responseType: 'arraybuffer' });
     return Buffer.from(resMp4.data);
 }
 
@@ -53,46 +47,42 @@ async function webpToMp4Ezgif(buffer) {
 async function handleUbahStiker(sock, msg, from) {
     const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     
-    // Cek apakah user mereply sesuatu
     if (!quotedMsg) {
         return sock.sendMessage(from, { text: '⚠️ Silakan reply sebuah stiker dengan perintah *.ubah*' }, { quoted: msg });
     }
 
     const stickerMsg = quotedMsg.stickerMessage;
     
-    // Cek apakah yang direply adalah stiker
     if (!stickerMsg) {
         return sock.sendMessage(from, { text: '⚠️ Yang kamu reply bukan stiker!' }, { quoted: msg });
     }
 
-    await sock.sendMessage(from, { text: '⏳ Sedang mendeteksi dan mengubah stiker...' }, { quoted: msg });
+    await sock.sendMessage(from, { text: '⏳ Sedang mengubah stiker...' }, { quoted: msg });
 
     try {
-        // 1. Download Stiker menggunakan fungsi resmi Baileys
+        // 1. Tarik data stiker
         const stream = await downloadContentFromMessage(stickerMsg, 'sticker');
         let buffer = Buffer.from([]);
         for await (const chunk of stream) {
             buffer = Buffer.concat([buffer, chunk]);
         }
 
-        // 2. Deteksi Otomatis: Apakah ini stiker gerak (Animated WebP)?
-        // Animasi WebP selalu memiliki tag 'ANIM' di dalam headernya
+        // 2. Deteksi Otomatis
         const isAnimated = buffer.includes(Buffer.from('ANIM'));
 
         if (isAnimated) {
-            console.log('🔄 Mendeteksi stiker GERAK. Memulai konversi ke MP4...');
-            const mp4Buffer = await webpToMp4Ezgif(buffer);
+            console.log('🔄 Konversi Stiker Gerak -> MP4...');
+            const mp4Buffer = await webpToMp4(buffer);
             await sock.sendMessage(from, { 
                 video: mp4Buffer, 
-                caption: '✅ *Stiker Gerak -> Video MP4*' 
+                caption: 'berhasil di ubah' 
             }, { quoted: msg });
         } else {
-            console.log('📸 Mendeteksi stiker DIAM. Memulai konversi ke PNG...');
-            // Menggunakan Sharp untuk mengubah WebP diam menjadi PNG
+            console.log('📸 Konversi Stiker Diam -> PNG...');
             const pngBuffer = await sharp(buffer).png().toBuffer();
             await sock.sendMessage(from, { 
                 image: pngBuffer, 
-                caption: '✅ *Stiker Diam -> Foto PNG*' 
+                caption: 'berhasil di ubah' 
             }, { quoted: msg });
         }
 
