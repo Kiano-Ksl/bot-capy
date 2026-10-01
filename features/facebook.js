@@ -1,7 +1,7 @@
 // File: features/facebook.js
 const axios = require('axios');
-const cheerio = require('cheerio');
 
+// Fungsi untuk mencari link FB di dalam pesan
 function extractLink(textToParse) {
     const urlRegex = /(https?:\/\/[^\s]+)/g; 
     const links = textToParse.match(urlRegex);
@@ -15,6 +15,67 @@ function extractLink(textToParse) {
     return null;
 }
 
+// 1. Mencuri Token dari fbdownloader.to
+async function getToken() {
+    const url = "https://fbdownloader.to/id";
+    const { data: html } = await axios.get(url, {
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7"
+        }
+    });
+
+    const regex = /k_exp="([^"]+)".+?k_token="([^"]+)"/s;
+    const match = html.match(regex);
+    if (!match) throw new Error("Token tidak ditemukan");
+
+    return {
+        k_exp: match[1],
+        k_token: match[2]
+    };
+}
+
+// 2. Mengeksekusi pencarian video
+async function fbDownloader(fbUrl) {
+    const { k_exp, k_token } = await getToken();
+
+    const payload = new URLSearchParams({
+        k_exp,
+        k_token,
+        p: "home",
+        q: fbUrl,
+        lang: "id",
+        v: "v2",
+        W: ""
+    });
+
+    const { data } = await axios.post("https://fbdownloader.to/api/ajaxSearch", payload, {
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "X-Requested-With": "XMLHttpRequest",
+            "Origin": "https://fbdownloader.to",
+            "Referer": "https://fbdownloader.to/id"
+        }
+    });
+
+    if (!data || !data.data) throw new Error("Gagal mengambil data video");
+
+    const html = data.data;
+    const results = [];
+
+    const rowRegex = /<td class="video-quality">(.*?)<\/td>[\s\S]*?(?:href="(.*?)"|data-videourl="(.*?)")/g;
+    let match;
+    while ((match = rowRegex.exec(html)) !== null) {
+        const quality = match[1].trim();
+        const url = match[2] || match[3];
+        if (quality && url) results.push({ quality, url });
+    }
+
+    return results;
+}
+
+// 3. Jembatan Penghubung Bot (Handler)
 async function handleFacebook(sock, msg, from, fullTextToSearch) {
     const url = extractLink(fullTextToSearch);
     if (!url) return sock.sendMessage(from, { text: '⚠️ Link Facebook tidak ditemukan! Kirim link atau reply pesan.' }, { quoted: msg });
@@ -22,41 +83,19 @@ async function handleFacebook(sock, msg, from, fullTextToSearch) {
     await sock.sendMessage(from, { text: '⏳ Sedang mengunduh video Facebook...' }, { quoted: msg });
     
     try {
-        console.log(`\n🔄 [FB] Menjalankan Scraper InstaTiktok...`);
-        const SITE_URL = 'https://instatiktok.com/';
-        const form = new URLSearchParams();
-        form.append('url', url);
-        form.append('platform', 'facebook');
-        form.append('siteurl', SITE_URL);
+        console.log(`\n🔄 [FB] Menjalankan Scraper fbdownloader.to...`);
+        const results = await fbDownloader(url);
+        
+        if (!results || results.length === 0) {
+            throw new Error('Video tidak ditemukan. Mungkin akun diprivate.');
+        }
 
-        const res = await axios.post(`${SITE_URL}api`, form.toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'Origin': SITE_URL,
-                'Referer': SITE_URL,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const html = res?.data?.html;
-        if (!html || res?.data?.status !== 'success') throw new Error('Gagal mengambil data scraper');
-
-        const $ = cheerio.load(html);
-        const links = [];
-
-        $('a.btn[href^="http"]').each((_, el) => {
-            const link = $(el).attr('href');
-            if (link && !links.includes(link)) links.push(link);
-        });
-
-        if (links.length === 0) throw new Error('Link download tidak ditemukan di halaman');
-
-        const videoUrl = links.at(-1);
+        // Cari Kualitas Tertinggi (HD), kalau tidak ada ambil kualitas normal (SD)
+        let bestVideo = results.find(v => v.quality.toLowerCase().includes('hd')) || results[0];
 
         await sock.sendMessage(from, { 
-            video: { url: videoUrl }, 
-            caption: '✅ Video Facebook berhasil diunduh!' 
+            video: { url: bestVideo.url }, 
+            caption: `✅ *FACEBOOK DOWNLOADER*\n\n🎥 Kualitas: ${bestVideo.quality}` 
         }, { quoted: msg });
         
         console.log('✅ [LOG] Facebook sukses dikirim!');
@@ -64,7 +103,7 @@ async function handleFacebook(sock, msg, from, fullTextToSearch) {
     } catch (e) {
         console.log(`⚠️ [LOG] Scraper FB Gagal:`, e.message);
         
-        // FALLBACK
+        // MESIN CADANGAN (FALLBACK RYzendesu) 
         try {
             console.log(`🔄 [FB] Mencoba Fallback API Ryzendesu...`);
             const { data } = await axios.get(`https://api.ryzendesu.vip/api/downloader/fbdl?url=${encodeURIComponent(url)}`, {
@@ -75,7 +114,6 @@ async function handleFacebook(sock, msg, from, fullTextToSearch) {
             let finalUrl = '';
 
             if (Array.isArray(videoData)) {
-                // Cari resolusi
                 const hd = videoData.find(v => v.resolution?.toLowerCase().includes('hd') || v.quality?.toLowerCase().includes('hd'));
                 finalUrl = hd ? hd.url : videoData[0].url;
             } else if (videoData?.url) {
@@ -86,13 +124,13 @@ async function handleFacebook(sock, msg, from, fullTextToSearch) {
 
             await sock.sendMessage(from, { 
                 video: { url: finalUrl }, 
-                caption: '✅ Video Facebook berhasil diunduh!' 
+                caption: '✅ *FACEBOOK DOWNLOADER* (Mode Cadangan)' 
             }, { quoted: msg });
             
             console.log('✅ [LOG] Facebook (Fallback) sukses dikirim!');
         } catch (err) {
             console.log(`❌ [LOG] FB Fallback Error:`, err.message);
-            sock.sendMessage(from, { text: `❌ Gagal mengunduh Facebook. Pastikan video bersifat publik (tidak private).` }, { quoted: msg });
+            sock.sendMessage(from, { text: `❌ Gagal mengunduh Facebook. Pastikan video bersifat publik (tidak private/grup tertutup).` }, { quoted: msg });
         }
     }
 }

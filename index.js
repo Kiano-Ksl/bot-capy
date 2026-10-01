@@ -3,7 +3,6 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 
-const handleAngryBird = require('./features/angrybird');
 const handleBalap = require('./features/balap.js');
 const handleKage = require('./features/kage');
 const handleFlappy = require('./features/flappy');
@@ -147,7 +146,6 @@ Halo! Ada yang bisa Capy bantu?
  ◦ *.flappy* (Main Flappy Bird)
  ◦ *.balap* (Main Balapan)
  ◦ *.mahjong* (Main Mahjong)
-  ◦ *.angrybird* (Main Angry Birds)
 
 🛠️ *TOOLS*
  ◦ *.s* (Ubah Foto/Video jadi Stiker)
@@ -251,18 +249,6 @@ Halo! Ada yang bisa Capy bantu?
                 reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
             };
             await gameMahjong.handler(mMock, { sock });
-        }
-
-        // ANGRY BIRD HTML
-        if (command === '.angrybird' || command === '.ab' || command === '.burung') {
-            const mMock = {
-                chat: from,
-                pushName: msg.pushName || "Player",
-                name: msg.pushName || "Player",
-                react: async (emoji) => await sock.sendMessage(from, { react: { text: emoji, key: msg.key } }).catch(()=>{}),
-                reply: async (text) => await sock.sendMessage(from, { text: text }, { quoted: msg }).catch(()=>{})
-            };
-            await handleAngryBird.handler(mMock, { sock });
         }
 
         // FITUR FLUX
