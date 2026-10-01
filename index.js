@@ -3,6 +3,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 
+const handleUbahStiker = require('./features/ubahstiker');
 const handleBalap = require('./features/balap.js');
 const handleKage = require('./features/kage');
 const handleFlappy = require('./features/flappy');
@@ -146,6 +147,7 @@ Halo! Ada yang bisa Capy bantu?
  ◦ *.flappy* (Main Flappy Bird)
  ◦ *.balap* (Main Balapan)
  ◦ *.mahjong* (Main Mahjong)
+ ◦ *.ubah* (Reply stiker jadi Foto/Video)
 
 🛠️ *TOOLS*
  ◦ *.s* (Ubah Foto/Video jadi Stiker)
@@ -207,6 +209,11 @@ Halo! Ada yang bisa Capy bantu?
         // DINO RUN HTML
         if (command === '.dino' || command === '.dinorun') {
             await handleDino(sock, msg, from, args);
+        }
+
+        // UBAH STIKER JADI FOTO/VIDEO
+        if (command === '.ubah' || command === '!ubah' || command === '.toimg') {
+            await handleUbahStiker(sock, msg, from);
         }
 
         // FITUR AI
