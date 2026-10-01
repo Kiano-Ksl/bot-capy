@@ -3,42 +3,79 @@ const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const sharp = require('sharp');
 const axios = require('axios');
 const FormData = require('form-data');
-const cheerio = require('cheerio');
 
 // ==========================================
-// MESIN EZGIF (UNTUK STIKER GERAK -> MP4)
+// MESIN EZGIF (LOGIKA TANGGUH DARI togif.js)
 // ==========================================
-async function webpToMp4(buffer) {
-    // 1. Upload ke EZGif dengan pembungkusan (Boundary) yang benar
-    const form = new FormData();
-    form.append('new-image-url', '');
-    form.append('new-image', buffer, { filename: 'sticker.webp', contentType: 'image/webp' });
+async function webp2mp4(buffer) {
+    try {
+        const form = new FormData();
+        form.append('new-image-url', '');
+        form.append('new-image', buffer, { filename: 'sticker.webp', contentType: 'image/webp' });
+        form.append('upload', 'Upload!');
 
-    // s6.ezgif.com adalah server khusus upload yang paling stabil
-    const res = await axios.post('https://s6.ezgif.com/webp-to-mp4', form, {
-        headers: form.getHeaders()
-    });
-    
-    const $ = cheerio.load(res.data);
-    const file = $('input[name="file"]').val();
-    if (!file) throw new Error('Gagal mendapatkan ID file dari server EZGif.');
+        // 1. Upload ke domain utama, biarkan EZGif yang mengarahkan servernya
+        const res = await axios.post('https://ezgif.com/webp-to-mp4', form, {
+            headers: {
+                ...form.getHeaders(),
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
 
-    // 2. Eksekusi Konversi ke MP4
-    const form2 = new FormData();
-    form2.append('file', file);
-    form2.append('convert', 'Convert WebP to MP4!');
+        const html = res.data;
 
-    const res2 = await axios.post(`https://ezgif.com/webp-to-mp4/${file}`, form2, {
-        headers: form2.getHeaders()
-    });
-    
-    const $2 = cheerio.load(res2.data);
-    const resultUrl = 'https:' + $2('div#output > p.outfile > video > source').attr('src');
-    if (!resultUrl || resultUrl === 'https:undefined') throw new Error('Gagal memproses video MP4.');
+        // 2. Parser ID File menggunakan Regex langsung dari togif.js milikmu
+        let match = html.match(/href=["'](\/webp-to-mp4\/[^"']+?\.webp\.html)["']/i) ||
+                    html.match(/action=["'](?:https:\/\/ezgif\.com)?(\/webp-to-mp4\/[^"']+?\.webp)["']/i) ||
+                    html.match(/\/webp-to-mp4\/([^"'<>]+?\.webp)\.html/i) ||
+                    html.match(/name=["']file["'][^>]*value=["']([^"']+?\.webp)["']/i);
 
-    // 3. Download hasil MP4
-    const resMp4 = await axios.get(resultUrl, { responseType: 'arraybuffer' });
-    return Buffer.from(resMp4.data);
+        if (!match) throw new Error('Struktur web EZGif berubah, gagal ekstrak ID file.');
+
+        let file = match[1];
+        if (file.startsWith('/webp-to-mp4/')) {
+            file = file.replace('/webp-to-mp4/', '').replace(/\.html$/i, '');
+        }
+
+        // 3. Eksekusi Konversi ke MP4
+        const form2 = new FormData();
+        form2.append('file', file);
+        form2.append('background', '#ffffff');
+        form2.append('backgroundc', '#ffffff');
+        form2.append('repeat', '1');
+        form2.append('ajax', 'true');
+
+        const res2 = await axios.post(`https://ezgif.com/webp-to-mp4/${file}?ajax=true`, form2, {
+            headers: {
+                ...form2.getHeaders(),
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
+
+        const html2 = res2.data;
+        
+        // 4. Ambil link MP4
+        const mp4Match = html2.match(/<source[^>]+src=["']([^"']+?\.mp4)["']/i) ||
+                         html2.match(/href=["'](\/save\/[^"']+?\.mp4)["']/i) ||
+                         html2.match(/(\/\/s\d+\.ezgif\.com\/tmp\/[^"'<>]+?\.mp4)/i);
+
+        if (!mp4Match) throw new Error('Gagal mendapatkan link MP4 dari hasil convert.');
+
+        let mp4Url = mp4Match[1];
+        if (mp4Url.startsWith('/save/')) {
+            mp4Url = mp4Url.replace('/save/', '//s6.ezgif.com/tmp/');
+        }
+        if (mp4Url.startsWith('//')) {
+            mp4Url = 'https:' + mp4Url;
+        }
+
+        // 5. Download hasil MP4
+        const resMp4 = await axios.get(mp4Url, { responseType: 'arraybuffer' });
+        return Buffer.from(resMp4.data);
+
+    } catch (e) {
+        throw new Error(`Gagal mendapatkan ID file dari server EZGif.`);
+    }
 }
 
 // ==========================================
@@ -60,19 +97,18 @@ async function handleUbahStiker(sock, msg, from) {
     await sock.sendMessage(from, { text: '⏳ Sedang mengubah stiker...' }, { quoted: msg });
 
     try {
-        // 1. Tarik data stiker
         const stream = await downloadContentFromMessage(stickerMsg, 'sticker');
         let buffer = Buffer.from([]);
         for await (const chunk of stream) {
             buffer = Buffer.concat([buffer, chunk]);
         }
 
-        // 2. Deteksi Otomatis
-        const isAnimated = buffer.includes(Buffer.from('ANIM'));
+        // Cek bawaan dari Baileys atau cek DNA webp
+        const isAnimated = stickerMsg.isAnimated || buffer.includes(Buffer.from('ANIM'));
 
         if (isAnimated) {
             console.log('🔄 Konversi Stiker Gerak -> MP4...');
-            const mp4Buffer = await webpToMp4(buffer);
+            const mp4Buffer = await webp2mp4(buffer);
             await sock.sendMessage(from, { 
                 video: mp4Buffer, 
                 caption: 'berhasil di ubah' 
