@@ -1,80 +1,53 @@
 // File: features/instagram.js
-const axios = require("axios");
-const FormData = require("form-data");
-const cheerio = require("cheerio");
+const { instagram } = require('../lib/instagramdl');
 
-// Fungsi mencari link IG dari pesan
+// Ekstrak URL
 function extractLink(textToParse) {
     const urlRegex = /(https?:\/\/[^\s]+)/g; 
     const links = textToParse.match(urlRegex);
     return links ? links.find(l => l.includes('instagram')) : null;
 }
 
-// Mesin Scraper (SnapInsta Top) dari SC yang kamu kirim
-async function igdl(url) {
-    const form = new FormData();
-    form.append("url", url);
-    form.append("action", "post");
-
-    const res = await axios.post("https://snapinsta.top/action.php", form, {
-        headers: {
-            ...form.getHeaders(),
-            "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36",
-            "accept": "*/*",
-            "origin": "https://snapinsta.top",
-            "referer": "https://snapinsta.top/"
-        }
-    });
-
-    const $ = cheerio.load(res.data);
-    const downloads = [];
-
-    $(".download-items__btn a").each((_, el) => {
-        let path = $(el).attr("href");
-        if (!path) return;
-        if (!path.startsWith("http")) path = "https://snapinsta.top" + path;
-        downloads.push(path);
-    });
-
-    return {
-        status: downloads.length ? 200 : 404,
-        download: downloads
-    };
-}
-
-// Jembatan Penghubung Bot (Handler)
 async function handleInstagram(sock, msg, from, fullTextToSearch) {
     const url = extractLink(fullTextToSearch);
-    if (!url) return sock.sendMessage(from, { text: '⚠️ Link Instagram tidak valid.' }, { quoted: msg });
-
-    await sock.sendMessage(from, { text: '⏳ Mengunduh menggunakan SC baru (SnapInsta)...' }, { quoted: msg });
-
+    if (!url) return sock.sendMessage(from, { text: '⚠️ Link tidak valid.' }, { quoted: msg });
+    
+    await sock.sendMessage(from, { text: '🕵️‍♂️ Mesin pintar sedang membedah Instagram...' }, { quoted: msg });
+    
     try {
-        console.log(`🔄 [IG] Mencoba SC SnapInsta...`);
-        let res = await igdl(url);
+        const res = await instagram.download(url);
 
-        if (res.status !== 200 || !res.download.length) {
-            throw new Error("Tidak ada media yang ditemukan.");
+        if (!res.status) {
+            return sock.sendMessage(from, { text: `❌ Penyamaran Gagal: ${res.error}` }, { quoted: msg });
         }
 
-        // SC aslinya mendownload dalam bentuk Buffer, kita ikuti persis
-        for (let vidUrl of res.download) {
-            let buf = (await axios.get(vidUrl, { responseType: "arraybuffer" })).data;
-            buf = Buffer.from(buf);
+        const data = res.result.downloadUrls;
+        const captionText = `📸 *IG DOWNLOADER*\n👤 *Akun:* @${res.result.author}\n\n📝 ${res.result.caption}`;
 
-            // Cek kode unik di awal file: jika "ftyp" berarti formatnya MP4 (Video)
-            if (buf.slice(4, 8).toString() === "ftyp") {
-                await sock.sendMessage(from, { video: buf, caption: '✅ SC Baru Berhasil!' }, { quoted: msg });
-            } else {
-                await sock.sendMessage(from, { image: buf, caption: '✅ SC Baru Berhasil!' }, { quoted: msg });
+        let hasMedia = false;
+
+        // Kirim Video jika ada
+        if (data.videos && data.videos.length > 0) {
+            for (let vid of data.videos) {
+                await sock.sendMessage(from, { video: { url: vid.url }, caption: captionText }, { quoted: msg });
             }
-        }
+            hasMedia = true;
+        } 
         
-        console.log(`✅ [IG] SC Baru Berhasil dikirim!`);
+        // Kirim Gambar jika ada
+        if (data.images && data.images.length > 0) {
+            for (let img of data.images) {
+                await sock.sendMessage(from, { image: { url: img.url }, caption: captionText }, { quoted: msg });
+            }
+            hasMedia = true;
+        }
 
+        if (!hasMedia) {
+            sock.sendMessage(from, { text: '❌ Media tidak ditemukan. Mungkin hanya foto profil atau akun diprivate.' }, { quoted: msg });
+        }
     } catch (e) {
-        console.log(`❌ [IG] SC Baru Gagal:`, e.message);
-        await sock.sendMessage(from, { text: `❌ SC Baru Gagal: ${e.message}\n(Ini biasanya karena diblokir oleh pihak webnya)` }, { quoted: msg });
+        console.error('❌ Error IG:', e);
+        sock.sendMessage(from, { text: '❌ Terjadi kesalahan fatal di sistem.' }, { quoted: msg });
     }
 }
 
